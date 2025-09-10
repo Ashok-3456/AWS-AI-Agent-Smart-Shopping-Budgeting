@@ -1,0 +1,67 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Properties:
+Handler: app.lambda_handler
+CodeUri: lambdas/detect_recurring/
+Policies:
+- DynamoDBCrudPolicy:
+TableName: !Ref TransactionsTable
+- DynamoDBCrudPolicy:
+TableName: !Ref OrdersTable
+
+
+PriceCompareFunction:
+Type: AWS::Serverless::Function
+Properties:
+Handler: app.lambda_handler
+CodeUri: lambdas/price_compare/
+Policies:
+- DynamoDBCrudPolicy:
+TableName: !Ref PriceCacheTable
+
+
+PlaceOrderFunction:
+Type: AWS::Serverless::Function
+Properties:
+Handler: app.lambda_handler
+CodeUri: lambdas/place_order/
+Policies:
+- DynamoDBCrudPolicy:
+TableName: !Ref OrdersTable
+- SNSPublishMessagePolicy:
+TopicName: !Ref OrdersTopic
+
+
+GenerateReportFunction:
+Type: AWS::Serverless::Function
+Properties:
+Handler: app.lambda_handler
+CodeUri: lambdas/generate_report/
+Policies:
+- S3CrudPolicy:
+BucketName: !Ref ReportsBucket
+
+
+BedrockProxyFunction:
+Type: AWS::Serverless::Function
+Properties:
+Handler: app.lambda_handler
+CodeUri: lambdas/bedrock_proxy/
+Environment:
+Variables:
+BEDROCK_MODEL_ID: "REPLACE_WITH_MODEL_ID"
+
+
+ApiGateway:
+Type: AWS::Serverless::Api
+Properties:
+StageName: dev
+Cors:
+AllowMethods: "'OPTIONS,GET,POST'
+AllowHeaders: "'*'"
+AllowOrigin: "'*'"
+
+
+Outputs:
+ApiUrl:
+Description: "API Gateway endpoint URL"
+Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/dev/"
